@@ -10,14 +10,15 @@
 //
 
 #include <iostream>
+#include <exception>
 
 template <typename T>
 class Stack {
 public:
     Stack();
     ~Stack();
-    T pop();
-    T push(T newval);
+    bool pop(T *value);
+    bool push(T newval);
 private:
     struct Element {
         T value;
@@ -27,12 +28,14 @@ private:
     struct Element *head;
 };
 
+//Constructor
 template <typename T>
 Stack<T>::Stack(){
     head = NULL;
     return;
 }
 
+//Destructor
 template <typename T>
 Stack<T>::~Stack(){
     Element *next;
@@ -44,49 +47,83 @@ Stack<T>::~Stack(){
     return;
 }
 
+//Pushes a new value onto the stack
+//Returns:  true on success, false on failure to allocate memory.
 template <typename T>
-T Stack<T>::push(T newval){
-    Element *elem = new Element;
-    //allocation error will throw exception
+bool Stack<T>::push(T newval){
+    Element *elem;
+    try {
+        elem = new Element;
+    } catch (std::bad_alloc& exc) {
+        std::cerr << "ERROR: could not allocate storage.\n";
+        //we could call std::terminate() here instead.
+        return false;
+    }
     elem->value = newval;
     elem->next = head;
     head = elem;
-    return newval;
+    return true;
 }
 
+//Pops a value from the stack.
+//Returns:  true on success, false on empty stack.
 template <typename T>
-T Stack<T>::pop(){
-    T data;
+bool Stack<T>::pop(T *value){
     if(head == NULL){
-        //this could be handled via assert for a more strict error handling approach
-        std::cerr << "ERROR:  pop() called on empty stack!  Returning -1 for value!\n";
+        std::cerr << "ERROR:  pop() called on empty stack!  Returning false.\n";
+        return false;
     }else{
         struct Element *temp;
-        data = head->value;
+        *value = head->value;
         temp = head->next;
         delete head;
         head = temp;
     }
-    return data;
+    return true;
 }
 
 int main(int argc, const char * argv[]){
-    int currentval;
-    //build the stack
-    class Stack<int> *head = new Stack<int>;
+    int value = 0;
+    int *valptr = &value;
+    bool respush = false;
+    bool respop = false;
     
-    //push and pop 'iterations' elements
+    //build the stack
+    //TODO TRY.
+    class Stack<int> *myStack;
+    try {
+        myStack = new Stack<int>;
+    } catch (std::bad_alloc& exc) {
+        std::cerr << "WARNING, FAILURE TO ALLOCATE, TERMINATING!\n";
+        std::terminate();
+    }
+    
+    //push items onto the stack
     int iterations = 10;
     for(int i=1;i<=iterations;i++){
-        head->push(i);
-        currentval = head->pop();
-        printf("%d-th pop of stack, expected value of %d, found: %d\n",i, i, currentval);
+        respush = myStack->push(i);
+        if(respush == false){
+            std::cout << "Error, respop returned " << respop << "\n";
+        }else{
+            std::cout << i << "-th push of the stack, successfully pushed value " << i <<"\n";
+        }
+    }
+    std::cout << "\n";
+    
+    //pop items from the stack
+    for(int i=1;i<=iterations;i++){
+        respop = myStack->pop(valptr);
+        if(respop == false){
+            std::cout << "Error, respush returned " << respush << "\n";
+        }else{
+            std::cout << i << "-th pop of the stack, expected value of " << i << " found: " << *valptr << "\n";
+        }
     }
     
     //testing popping the empty stack
-    head->pop();
+    myStack->pop(valptr);
     
-    delete head;
+    delete myStack;
     return 0;
 }
 
